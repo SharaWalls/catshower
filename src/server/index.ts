@@ -12,7 +12,6 @@ import {
   LeaderboardData,
   ContinentStats
 } from './core/leaderboard';
-import { getRedis } from '@devvit/redis';
 
 const app = express();
 
@@ -27,8 +26,7 @@ const router = express.Router();
 
 router.get('/api/init', async (_req, res): Promise<void> => {
   try {
-    const { postId } = getContext();
-    const redis = getRedis();
+    const { postId, redis } = getContext();
 
     if (!postId) {
       res.status(400).json({
@@ -56,8 +54,7 @@ router.get('/api/init', async (_req, res): Promise<void> => {
 
 router.get('/api/game-data', async (_req, res): Promise<void> => {
   try {
-    const { postId } = getContext();
-    const redis = getRedis();
+    const { postId, redis } = getContext();
 
     if (!postId) {
       res.status(400).json({ status: 'error', message: 'postId is required' });
@@ -81,8 +78,7 @@ router.get('/api/game-data', async (_req, res): Promise<void> => {
 router.post('/api/update-game', async (req, res): Promise<void> => {
   try {
     const { deltaTime } = req.body;
-    const { postId } = getContext();
-    const redis = getRedis();
+    const { postId, redis } = getContext();
 
     if (!postId) {
       res.status(400).json({ status: 'error', message: 'postId is required' });
@@ -110,8 +106,7 @@ router.post('/api/update-game', async (req, res): Promise<void> => {
 router.post('/api/button-press', async (req, res): Promise<void> => {
   try {
     const { buttonType, isPressed } = req.body;
-    const { postId } = getContext();
-    const redis = getRedis();
+    const { postId, redis } = getContext();
 
     if (!postId) {
       res.status(400).json({ status: 'error', message: 'postId is required' });
@@ -139,8 +134,7 @@ router.post('/api/button-press', async (req, res): Promise<void> => {
 router.post('/api/reset-game', async (req, res): Promise<void> => {
   try {
     const { newRound } = req.body;
-    const { postId } = getContext();
-    const redis = getRedis();
+    const { postId, redis } = getContext();
 
     if (!postId) {
       res.status(400).json({ status: 'error', message: 'postId is required' });
@@ -173,7 +167,7 @@ router.post('/api/submit-score', async (req, res): Promise<void> => {
     console.log('Submit score API called with body:', req.body);
     
     const playerScore: PlayerScore = req.body;
-    const redis = getRedis();
+    const { redis } = getContext();
 
     // 验证必需字段
     if (!playerScore.playerId || !playerScore.playerName || typeof playerScore.enduranceDuration !== 'number') {
@@ -239,7 +233,7 @@ router.get('/api/leaderboard', async (req, res): Promise<void> => {
     
     const limit = parseInt(req.query.limit as string) || 100;
     const continentId = req.query.continentId as string;
-    const redis = getRedis();
+    const { redis } = getContext();
 
     console.log(`Getting leaderboard with limit: ${limit}, continentId: ${continentId || 'global'}`);
 
@@ -281,7 +275,7 @@ router.get('/api/leaderboard/stats', async (_req, res): Promise<void> => {
   try {
     console.log('Continent stats API called');
     
-    const redis = getRedis();
+    const { redis } = getContext();
     const continentStats: ContinentStats[] = await getContinentStats({ redis });
 
     console.log('Continent statistics retrieved:', continentStats);
@@ -310,7 +304,7 @@ router.get('/api/player-best', async (req, res): Promise<void> => {
     console.log('Player best API called with query:', req.query);
     
     const playerId = req.query.playerId as string;
-    const redis = getRedis();
+    const { redis } = getContext();
 
     if (!playerId) {
       res.status(400).json({ 
@@ -346,7 +340,7 @@ router.get('/api/player-best', async (req, res): Promise<void> => {
  */
 router.get('/api/debug-leaderboard', async (_req, res): Promise<void> => {
   try {
-    const redis = getRedis();
+    const { redis } = getContext();
     await debugLeaderboard(redis);
     res.json({ 
       status: 'success', 
@@ -368,7 +362,7 @@ router.get('/api/debug-leaderboard', async (_req, res): Promise<void> => {
  */
 router.get('/api/health', async (_req, res): Promise<void> => {
   try {
-    const redis = getRedis();
+    const { redis } = getContext();
     
     // 简单的 Redis 连接测试
     await redis.ping();
