@@ -1,5 +1,5 @@
 /**
- * 游戏结算界面组件 - 全新UI设计
+ * 游戏结算界面组件 - 坚持时长挑战版本
  * 基于新的卡片式设计，展示游戏结果和统计数据
  * 
  * @author 开发者B - UI/UX 界面负责人
@@ -32,6 +32,7 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
   playerInfo,
 }) => {
   const [showRanking, setShowRanking] = useState(false);
+  
   // 格式化时间显示
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -52,19 +53,27 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
     return continentNames[continentId] || continentId;
   };
 
-  // 计算表现百分比（基于时间和轮数）
+  // 计算表现百分比（基于坚持时长）
   const getPerformancePercentage = (): number => {
-    // 简单的性能计算：基于完成轮数和时间
-    const baseScore = gameStats.roundsCompleted * 20;
-    const timeBonus = Math.max(0, 60 - gameStats.totalTime) * 2;
-    return Math.min(99, Math.max(1, baseScore + timeBonus));
+    // 基于坚持时长的性能计算
+    const enduranceScore = Math.min(99, Math.max(1, gameStats.totalTime * 2)); // 每秒2分
+    return Math.floor(enduranceScore);
+  };
+
+  // 获取表现等级
+  const getPerformanceGrade = (): { grade: string; color: string; emoji: string } => {
+    const time = gameStats.totalTime;
+    if (time >= 120) return { grade: 'S', color: '#FFD700', emoji: '👑' }; // 2分钟以上
+    if (time >= 90) return { grade: 'A', color: '#FF6B6B', emoji: '🔥' }; // 1.5分钟以上
+    if (time >= 60) return { grade: 'B', color: '#4ECDC4', emoji: '💪' }; // 1分钟以上
+    if (time >= 30) return { grade: 'C', color: '#45B7D1', emoji: '👍' }; // 30秒以上
+    return { grade: 'D', color: '#96CEB4', emoji: '🌱' }; // 30秒以下
   };
 
   // 动态生成猫咪数据
   const generateCats = () => {
-    // 模拟排行榜人数（在实际应用中，这应该来自真实的排行榜数据）
-    const leaderboardCount = Math.floor(Math.random() * 100) + 10; // 10-110人
-    const catCount = Math.max(8, Math.min(20, Math.floor(leaderboardCount / 5))); // 最少8个，最多20个
+    // 根据坚持时长生成猫咪数量
+    const catCount = Math.max(5, Math.min(15, Math.floor(gameStats.totalTime / 10))); // 每10秒一只猫，最少5只，最多15只
     
     const catImages = ["/Cat_1.png", "/Cat_2.png", "/Cat_3.png", "/Cat_5.png", "/Cat_6.png", "/Cat_7.png", "/Cat_2-1.png"];
     
@@ -75,15 +84,6 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
       top: 48,
       width: 120, // 以主猫咪宽度为准
       height: 66 + 120, // 姓名标签高度 + 主猫咪高度
-    };
-    
-    // 为了兼容现有逻辑，保留mainCat对象但标记为已处理
-    const mainCat = {
-      src: "/Cat_1.png",
-      size: 120,
-      top: 114,
-      left: centerX - 60, // 居中
-      isMain: true,
     };
     
     // 生成其他猫咪
@@ -101,8 +101,6 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
       right: number;
       bottom: number;
     }> = [];
-    
-    // 主猫咪现在在组合区域中，不需要单独添加
     
     // 添加主猫咪和姓名标签组合区域到已使用位置
     usedPositions.push({
@@ -162,6 +160,7 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
   };
 
   const cats = generateCats();
+  const performanceGrade = getPerformanceGrade();
 
   // 如果显示排名界面，返回排名组件
   if (showRanking) {
@@ -275,10 +274,10 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
 
               {/* 排名状态卡片 */}
               <div className="absolute w-[350px] h-[63px] top-[316px] left-[16px] bg-[#e6f9ff] rounded-[15px]">
-                                 <div className="h-[34px] top-[11px] leading-[normal] absolute w-[291px] left-[59px] font-normal text-transparent text-2xl tracking-[0]" style={{ fontFamily: 'lores-12' }}>
-                   <span className="text-black">{getContinentName(playerInfo.continentId)} is </span>
-                   <span className="text-[#fab817] font-bold text-[28px]">#1</span>
-                    </div>
+                <div className="h-[34px] top-[11px] leading-[normal] absolute w-[291px] left-[59px] font-normal text-transparent text-2xl tracking-[0]" style={{ fontFamily: 'lores-12' }}>
+                  <span className="text-black">{getContinentName(playerInfo.continentId)} is </span>
+                  <span className="text-[#fab817] font-bold text-[28px]">#1</span>
+                </div>
 
                 <img
                   className="absolute w-9 h-9 top-3 left-3.5 object-cover"
@@ -289,18 +288,21 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
                     target.style.display = 'none';
                   }}
                 />
-                  </div>
+              </div>
 
-              {/* 成绩状态卡片 */}
+              {/* 坚持时长成绩卡片 */}
               <div className="absolute w-[350px] h-[72px] top-[391px] left-[16px] bg-[#e6f9ff] rounded-[15px]">
-                                 <div className="top-[9px] leading-6 absolute w-[291px] left-[59px] font-normal text-transparent text-2xl tracking-[0]" style={{ fontFamily: 'lores-12' }}>
-                   <span className="text-black">
-                     Scrubbed for {formatTime(gameStats.totalTime)}, out-soaked{" "}
-                   </span>
-                   <span className="text-[#ffc106] font-bold text-[28px]">
-                     {getPerformancePercentage()}%
-                   </span>
-                   <span className="text-black"> of players!</span>
+                <div className="top-[9px] leading-6 absolute w-[291px] left-[59px] font-normal text-transparent text-2xl tracking-[0]" style={{ fontFamily: 'lores-12' }}>
+                  <span className="text-black">
+                    Survived for {formatTime(gameStats.totalTime)}, earned grade{" "}
+                  </span>
+                  <span 
+                    className="font-bold text-[28px]"
+                    style={{ color: performanceGrade.color }}
+                  >
+                    {performanceGrade.grade}
+                  </span>
+                  <span className="text-black"> {performanceGrade.emoji}</span>
                 </div>
 
                 <img
@@ -340,7 +342,7 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
                     if (navigator.share) {
                       navigator.share({
                         title: 'Cat Comfort Game',
-                        text: `I scored ${getPerformancePercentage()}% in Cat Comfort Game!`,
+                        text: `I survived ${formatTime(gameStats.totalTime)} in Cat Comfort Game and earned grade ${performanceGrade.grade}!`,
                         url: window.location.href
                       });
                     }
@@ -389,18 +391,18 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
                 }}
               />
 
-                             {/* 洲际文字 */}
-               <div 
-                 className="absolute w-[120px] h-[25px] top-[29px] left-[119px] flex items-center justify-center silkscreen-text"
-                 style={{
-                   color: '#F0BC08',
-                   fontSize: '24px',
-                 }}
-               >
-                 {getContinentName(playerInfo.continentId)}
-                              </div>
-                            </div>
-                          </div>
+              {/* 洲际文字 */}
+              <div 
+                className="absolute w-[120px] h-[25px] top-[29px] left-[119px] flex items-center justify-center silkscreen-text"
+                style={{
+                  color: '#F0BC08',
+                  fontSize: '24px',
+                }}
+              >
+                {getContinentName(playerInfo.continentId)}
+              </div>
+            </div>
+          </div>
 
           {/* 下载按钮 */}
           <Button

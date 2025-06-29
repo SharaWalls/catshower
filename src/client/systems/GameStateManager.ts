@@ -71,7 +71,7 @@ export class GameStateManager {
     newState.interferenceTimer = this.timerSystem.updateInterferenceTimer(newState.interferenceTimer, deltaTime);
 
     // 2. 检查舒适度失败条件 - 舒适度过低时游戏结束
-    if (this.timerSystem.isComfortFailure(newState.currentComfort)) {
+    if (this.comfortSystem.isComfortFailure(newState.currentComfort)) {
       newState.gameStatus = 'failure';
       return newState;
     }
@@ -132,9 +132,7 @@ export class GameStateManager {
       deltaTime
     );
 
-    // 7. Comfort can go to 0 but game doesn't end - only when time runs out
-
-    // 8. 更新成功保持计时器（仅用于UI显示，不触发游戏结束）
+    // 7. 更新成功保持计时器（仅用于UI显示，不触发游戏结束）
     const isMaxComfort = this.comfortSystem.isMaxComfort(newState.currentComfort);
     newState.successHoldTimer = this.timerSystem.updateSuccessHoldTimer(
       newState.successHoldTimer,

@@ -1,5 +1,5 @@
 /**
- * 舒适度系统
+ * 舒适度管理系统
  * 负责处理游戏中的舒适度变化逻辑
  * 
  * @author 开发者A - 游戏核心逻辑负责人
@@ -31,12 +31,28 @@ export class ComfortSystem {
       newComfort -= this.config.COMFORT_CHANGE_RATE * deltaTime;
     }
 
-    // 确保舒适度值在有效范围内 (0-1)
     return Math.max(0, Math.min(1, newComfort));
   }
 
   /**
-   * 获取基于舒适度的猫咪头像
+   * 检查舒适度是否达到失败条件
+   * Check if comfort level has reached failure condition
+   */
+  isComfortFailure(comfortLevel: number): boolean {
+    // 当舒适度降到0或以下时，游戏失败
+    return comfortLevel <= 0;
+  }
+
+  /**
+   * 检查舒适度是否达到最大值
+   * Check if comfort level has reached maximum
+   */
+  isMaxComfort(comfortLevel: number): boolean {
+    return comfortLevel >= 1.0;
+  }
+
+  /**
+   * 获取舒适度对应的猫咪头像
    * Get cat avatar based on comfort level
    */
   getComfortAvatar(comfortLevel: number): string {
@@ -50,18 +66,10 @@ export class ComfortSystem {
   }
 
   /**
-   * 检查是否达到最大舒适度
-   * Check if maximum comfort is reached
+   * 获取舒适度状态描述
+   * Get comfort status description
    */
-  isMaxComfort(comfortLevel: number): boolean {
-    return comfortLevel >= 1.0;
-  }
-
-  /**
-   * 获取舒适度等级描述
-   * Get comfort level description
-   */
-  getComfortDescription(comfortLevel: number): string {
+  getComfortStatus(comfortLevel: number): string {
     if (comfortLevel >= 0.8) {
       return "Very Happy";
     } else if (comfortLevel >= 0.6) {
