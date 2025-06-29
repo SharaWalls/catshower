@@ -24,7 +24,7 @@ const router = express.Router();
 
 // ==================== 现有的游戏API路由 ====================
 
-router.get('/api/init', async (_req, res): Promise<void> => {
+router.get('/init', async (_req, res): Promise<void> => {
   try {
     const { postId, redis } = getContext();
 
@@ -52,7 +52,7 @@ router.get('/api/init', async (_req, res): Promise<void> => {
   }
 });
 
-router.get('/api/game-data', async (_req, res): Promise<void> => {
+router.get('/game-data', async (_req, res): Promise<void> => {
   try {
     const { postId, redis } = getContext();
 
@@ -75,7 +75,7 @@ router.get('/api/game-data', async (_req, res): Promise<void> => {
   }
 });
 
-router.post('/api/update-game', async (req, res): Promise<void> => {
+router.post('/update-game', async (req, res): Promise<void> => {
   try {
     const { deltaTime } = req.body;
     const { postId, redis } = getContext();
@@ -103,7 +103,7 @@ router.post('/api/update-game', async (req, res): Promise<void> => {
   }
 });
 
-router.post('/api/button-press', async (req, res): Promise<void> => {
+router.post('/button-press', async (req, res): Promise<void> => {
   try {
     const { buttonType, isPressed } = req.body;
     const { postId, redis } = getContext();
@@ -131,7 +131,7 @@ router.post('/api/button-press', async (req, res): Promise<void> => {
   }
 });
 
-router.post('/api/reset-game', async (req, res): Promise<void> => {
+router.post('/reset-game', async (req, res): Promise<void> => {
   try {
     const { newRound } = req.body;
     const { postId, redis } = getContext();
@@ -162,7 +162,7 @@ router.post('/api/reset-game', async (req, res): Promise<void> => {
  * Submit score to global leaderboard
  * POST /api/submit-score
  */
-router.post('/api/submit-score', async (req, res): Promise<void> => {
+router.post('/submit-score', async (req, res): Promise<void> => {
   try {
     console.log('Submit score API called with body:', req.body);
     
@@ -227,7 +227,7 @@ router.post('/api/submit-score', async (req, res): Promise<void> => {
  * Get leaderboard data (supports continent filtering)
  * GET /api/leaderboard?continentId=XX
  */
-router.get('/api/leaderboard', async (req, res): Promise<void> => {
+router.get('/leaderboard', async (req, res): Promise<void> => {
   try {
     console.log('Leaderboard API called with query:', req.query);
     
@@ -271,7 +271,7 @@ router.get('/api/leaderboard', async (req, res): Promise<void> => {
  * Get continent statistics
  * GET /api/leaderboard/stats
  */
-router.get('/api/leaderboard/stats', async (_req, res): Promise<void> => {
+router.get('/leaderboard/stats', async (_req, res): Promise<void> => {
   try {
     console.log('Continent stats API called');
     
@@ -299,7 +299,7 @@ router.get('/api/leaderboard/stats', async (_req, res): Promise<void> => {
  * Get player's personal best score
  * GET /api/player-best
  */
-router.get('/api/player-best', async (req, res): Promise<void> => {
+router.get('/player-best', async (req, res): Promise<void> => {
   try {
     console.log('Player best API called with query:', req.query);
     
@@ -336,7 +336,7 @@ router.get('/api/player-best', async (req, res): Promise<void> => {
  * Add test data to leaderboard
  * POST /api/add-test-data
  */
-router.post('/api/add-test-data', async (_req, res): Promise<void> => {
+router.post('/add-test-data', async (_req, res): Promise<void> => {
   try {
     const { redis } = getContext();
     
@@ -431,7 +431,7 @@ router.post('/api/add-test-data', async (_req, res): Promise<void> => {
  * Debug leaderboard data
  * GET /api/debug-leaderboard
  */
-router.get('/api/debug-leaderboard', async (_req, res): Promise<void> => {
+router.get('/debug-leaderboard', async (_req, res): Promise<void> => {
   try {
     const { redis } = getContext();
     await debugLeaderboard(redis);
@@ -453,7 +453,7 @@ router.get('/api/debug-leaderboard', async (_req, res): Promise<void> => {
  * Health check
  * GET /api/health
  */
-router.get('/api/health', async (_req, res): Promise<void> => {
+router.get('/health', async (_req, res): Promise<void> => {
   try {
     const { redis } = getContext();
     
@@ -475,8 +475,8 @@ router.get('/api/health', async (_req, res): Promise<void> => {
   }
 });
 
-// 应用路由
-app.use(router);
+// 应用路由 - 将路由挂载到 /api 路径
+app.use('/api', router);
 
 const port = getServerPort();
 const server = createServer(app);
