@@ -83,8 +83,8 @@ export async function submitScore({
   playerScore: PlayerScore;
 }): Promise<{ success: boolean; rank: number; message: string; enduranceDuration: number }> {
   try {
-    console.log(`Submitting score for player ${playerScore.playerId} (${playerScore.playerName})`);
-    console.log(`Endurance duration: ${playerScore.enduranceDuration}s, Continent: ${playerScore.continentId}`);
+    console.log(`[submitScore] Submitting score for player ${playerScore.playerId} (${playerScore.playerName})`);
+    console.log(`[submitScore] Endurance duration: ${playerScore.enduranceDuration}s, Continent: ${playerScore.continentId}`);
     
     // 验证必需字段
     if (!playerScore.playerId || !playerScore.playerName || typeof playerScore.enduranceDuration !== 'number') {
@@ -98,6 +98,7 @@ export async function submitScore({
 
     // 保存玩家详细数据到 Hash
     await redis.hSet(PLAYER_SCORES_KEY, playerScore.playerId, JSON.stringify(playerScore));
+    console.log(`[submitScore] Saved player data to Redis hash: ${playerScore.playerId}`);
     
     // 使用坚持时长作为分数，时间越长排名越高
     const score = playerScore.enduranceDuration;
@@ -108,12 +109,12 @@ export async function submitScore({
       score: score
     });
     
-    console.log(`Player ${playerScore.playerName} added to global leaderboard with endurance duration ${score}s`);
+    console.log(`[submitScore] Player ${playerScore.playerName} added to global leaderboard with endurance duration ${score}s`);
     
     // 获取玩家在排行榜中的排名
     const rank = await getPlayerRank(redis, playerScore.playerId);
     
-    console.log(`Player ${playerScore.playerName} current rank: ${rank}`);
+    console.log(`[submitScore] Player ${playerScore.playerName} current rank: ${rank}`);
     
     return {
       success: true,
@@ -122,7 +123,7 @@ export async function submitScore({
       message: `Score submitted successfully. Current rank: ${rank}`
     };
   } catch (error) {
-    console.error('Error submitting score:', error);
+    console.error('[submitScore] Error submitting score:', error);
     throw error;
   }
 }
@@ -142,11 +143,11 @@ export async function getLeaderboard({
 }): Promise<LeaderboardData> {
   try {
     const leaderboardType = continentId ? `continent (${continentId})` : 'global';
-    console.log(`Getting ${leaderboardType} leaderboard with limit: ${limit}`);
+    console.log(`[getLeaderboard] Getting ${leaderboardType} leaderboard with limit: ${limit}`);
     
     // 从 Redis 获取排行榜前 N 名（按分数降序，时间越长越好）
     const topPlayerIds = await redis.zRevRange(LEADERBOARD_KEY, 0, limit - 1, { by: 'rank' });
-    console.log(`Retrieved ${topPlayerIds.length} player IDs from leaderboard`);
+    console.log(`[getLeaderboard] Retrieved ${topPlayerIds.length} player IDs from leaderboard:`, topPlayerIds);
     
     const entries: LeaderboardEntry[] = [];
     
@@ -166,15 +167,15 @@ export async function getLeaderboard({
               rank: entries.length + 1 // 重新计算排名
             };
             entries.push(entry);
-            console.log(`Rank ${entry.rank}: ${entry.playerName} (${entry.continentId}) - ${entry.enduranceDuration}s`);
+            console.log(`[getLeaderboard] Rank ${entry.rank}: ${entry.playerName} (${entry.continentId}) - ${entry.enduranceDuration}s`);
           }
         } else {
-          console.warn(`Invalid JSON data for player ${playerId}, skipping`);
+          console.warn(`[getLeaderboard] Invalid JSON data for player ${playerId}, skipping`);
           // 可选：清理无效数据
           await redis.hDel(PLAYER_SCORES_KEY, playerId);
         }
       } else {
-        console.warn(`No player data found for ${playerId}`);
+        console.warn(`[getLeaderboard] No player data found for ${playerId}`);
       }
     }
 
@@ -187,7 +188,7 @@ export async function getLeaderboard({
       totalPlayers = await redis.zCard(LEADERBOARD_KEY);
     }
     
-    console.log(`Total players in ${leaderboardType} leaderboard: ${totalPlayers}`);
+    console.log(`[getLeaderboard] Total players in ${leaderboardType} leaderboard: ${totalPlayers}`);
     
     const result = {
       entries,
@@ -196,10 +197,12 @@ export async function getLeaderboard({
       continentId
     };
     
-    console.log(`${leaderboardType} leaderboard data prepared with ${entries.length} entries`);
+    console.log(`[getLeaderboard] Preparing to return entries:`, entries);
+    console.log(`[getLeaderboard] Final leaderboard data:`, result);
+    
     return result;
   } catch (error) {
-    console.error('Error getting leaderboard:', error);
+    console.error('[getLeaderboard] Error getting leaderboard:', error);
     return {
       entries: [],
       totalPlayers: 0,
@@ -219,11 +222,11 @@ export async function getContinentStats({
   redis: Context['redis'] | RedisClient;
 }): Promise<ContinentStats[]> {
   try {
-    console.log('Getting continent statistics');
+    console.log('[getContinentStats] Getting continent statistics');
     
     // 获取所有玩家数据
     const allPlayerData = await redis.hGetAll(PLAYER_SCORES_KEY);
-    console.log(`Found ${Object.keys(allPlayerData).length} players in database`);
+    console.log(`[getContinentStats] Found ${Object.keys(allPlayerData).length} players in database`);
     
     // 统计每个洲际的玩家数量
     const continentCounts: { [key: string]: number } = {};
@@ -235,7 +238,7 @@ export async function getContinentStats({
         const continent = playerData.continentId || 'Unknown';
         continentCounts[continent] = (continentCounts[continent] || 0) + 1;
       } else {
-        console.warn(`Invalid JSON data for player ${playerId}, cleaning up`);
+        console.warn(`[getContinentStats] Invalid JSON data for player ${playerId}, cleaning up`);
         // 清理无效数据
         await redis.hDel(PLAYER_SCORES_KEY, playerId);
       }
@@ -258,10 +261,10 @@ export async function getContinentStats({
     // 按玩家数量降序排序
     stats.sort((a, b) => b.playerCount - a.playerCount);
     
-    console.log('Continent statistics:', stats);
+    console.log('[getContinentStats] Continent statistics:', stats);
     return stats;
   } catch (error) {
-    console.error('Error getting continent statistics:', error);
+    console.error('[getContinentStats] Error getting continent statistics:', error);
     return [];
   }
 }
@@ -278,7 +281,7 @@ export async function getPlayerRank(
     // 获取玩家的分数
     const playerScore = await redis.zScore(LEADERBOARD_KEY, playerId);
     if (playerScore === null) {
-      console.log(`Player ${playerId} not found in leaderboard`);
+      console.log(`[getPlayerRank] Player ${playerId} not found in leaderboard`);
       return -1;
     }
     
@@ -289,10 +292,10 @@ export async function getPlayerRank(
     // 排名 = 比当前玩家分数高的玩家数量 + 1
     const rank = playersWithHigherScores + 1;
     
-    console.log(`Player ${playerId} score: ${playerScore}, rank: ${rank}`);
+    console.log(`[getPlayerRank] Player ${playerId} score: ${playerScore}, rank: ${rank}`);
     return rank;
   } catch (error) {
-    console.error('Error getting player rank:', error);
+    console.error('[getPlayerRank] Error getting player rank:', error);
     return -1;
   }
 }
@@ -309,27 +312,27 @@ export async function getPlayerBest({
   playerId: string;
 }): Promise<PlayerScore | null> {
   try {
-    console.log(`Getting best score for player: ${playerId}`);
+    console.log(`[getPlayerBest] Getting best score for player: ${playerId}`);
     
     const playerDataStr = await redis.hGet(PLAYER_SCORES_KEY, playerId);
     if (playerDataStr) {
       const playerData = safeJsonParse<PlayerScore>(playerDataStr);
       
       if (playerData) {
-        console.log(`Found best score for player ${playerId}:`, playerData);
+        console.log(`[getPlayerBest] Found best score for player ${playerId}:`, playerData);
         return playerData;
       } else {
-        console.warn(`Invalid JSON data for player ${playerId}, cleaning up`);
+        console.warn(`[getPlayerBest] Invalid JSON data for player ${playerId}, cleaning up`);
         // 清理无效数据
         await redis.hDel(PLAYER_SCORES_KEY, playerId);
         return null;
       }
     }
     
-    console.log(`No best score found for player: ${playerId}`);
+    console.log(`[getPlayerBest] No best score found for player: ${playerId}`);
     return null;
   } catch (error) {
-    console.error('Error getting player best score:', error);
+    console.error('[getPlayerBest] Error getting player best score:', error);
     return null;
   }
 }
@@ -345,10 +348,10 @@ export async function cleanupLeaderboard(redis: Context['redis'] | RedisClient):
     if (totalPlayers > 1000) {
       // 删除排名 1000 以后的玩家（保留前 1000 名）
       await redis.zRemRangeByRank(LEADERBOARD_KEY, 0, totalPlayers - 1001);
-      console.log(`Cleaned up leaderboard, removed ${totalPlayers - 1000} entries`);
+      console.log(`[cleanupLeaderboard] Cleaned up leaderboard, removed ${totalPlayers - 1000} entries`);
     }
   } catch (error) {
-    console.error('Error cleaning up leaderboard:', error);
+    console.error('[cleanupLeaderboard] Error cleaning up leaderboard:', error);
   }
 }
 
@@ -358,7 +361,7 @@ export async function cleanupLeaderboard(redis: Context['redis'] | RedisClient):
  */
 export async function cleanupCorruptedData(redis: Context['redis'] | RedisClient): Promise<void> {
   try {
-    console.log('Starting cleanup of corrupted data...');
+    console.log('[cleanupCorruptedData] Starting cleanup of corrupted data...');
     
     const allPlayerData = await redis.hGetAll(PLAYER_SCORES_KEY);
     let cleanedCount = 0;
@@ -367,7 +370,7 @@ export async function cleanupCorruptedData(redis: Context['redis'] | RedisClient
       const playerData = safeJsonParse<PlayerScore>(playerDataStr);
       
       if (!playerData) {
-        console.log(`Removing corrupted data for player ${playerId}`);
+        console.log(`[cleanupCorruptedData] Removing corrupted data for player ${playerId}`);
         await redis.hDel(PLAYER_SCORES_KEY, playerId);
         // 同时从排行榜中移除
         await redis.zRem(LEADERBOARD_KEY, playerId);
@@ -375,9 +378,9 @@ export async function cleanupCorruptedData(redis: Context['redis'] | RedisClient
       }
     }
     
-    console.log(`Cleanup completed. Removed ${cleanedCount} corrupted entries.`);
+    console.log(`[cleanupCorruptedData] Cleanup completed. Removed ${cleanedCount} corrupted entries.`);
   } catch (error) {
-    console.error('Error during cleanup:', error);
+    console.error('[cleanupCorruptedData] Error during cleanup:', error);
   }
 }
 
@@ -391,12 +394,12 @@ export async function debugLeaderboard(redis: Context['redis'] | RedisClient): P
     
     // 检查排行榜大小
     const leaderboardSize = await redis.zCard(LEADERBOARD_KEY);
-    console.log(`Global leaderboard size: ${leaderboardSize}`);
+    console.log(`[debugLeaderboard] Global leaderboard size: ${leaderboardSize}`);
     
     if (leaderboardSize > 0) {
       // 获取前 10 名用于调试 (使用 zRevRange 因为时间长的排前面)
       const topPlayerIds = await redis.zRevRange(LEADERBOARD_KEY, 0, 9, { by: 'rank' });
-      console.log('Top 10 players (by endurance duration - longest first):');
+      console.log('[debugLeaderboard] Top 10 players (by endurance duration - longest first):');
       
       for (let i = 0; i < topPlayerIds.length; i++) {
         const playerId = topPlayerIds[i];
@@ -406,22 +409,22 @@ export async function debugLeaderboard(redis: Context['redis'] | RedisClient): P
           const playerData = safeJsonParse<PlayerScore>(playerDataStr);
           
           if (playerData) {
-            console.log(`Rank ${i + 1}: ${playerData.playerName} (${playerData.continentId}) - ${playerData.enduranceDuration}s`);
+            console.log(`[debugLeaderboard] Rank ${i + 1}: ${playerData.playerName} (${playerData.continentId}) - ${playerData.enduranceDuration}s`);
           } else {
-            console.log(`Rank ${i + 1}: [Invalid JSON] ${playerId}`);
+            console.log(`[debugLeaderboard] Rank ${i + 1}: [Invalid JSON] ${playerId}`);
           }
         } else {
-          console.log(`Rank ${i + 1}: [No Data] ${playerId}`);
+          console.log(`[debugLeaderboard] Rank ${i + 1}: [No Data] ${playerId}`);
         }
       }
     }
     
     // 检查洲际统计
     const continentStats = await getContinentStats({ redis });
-    console.log('Continent statistics:', continentStats);
+    console.log('[debugLeaderboard] Continent statistics:', continentStats);
     
     console.log('=== END ENDURANCE LEADERBOARD DEBUG INFO ===');
   } catch (error) {
-    console.error('Error in debug function:', error);
+    console.error('[debugLeaderboard] Error in debug function:', error);
   }
 }
