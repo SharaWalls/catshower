@@ -257,10 +257,22 @@ export async function getPlayerRank(
   playerId: string
 ): Promise<number> {
   try {
-    // 使用 zRevRank 因为我们要时间长的排在前面
-    const rank = await redis.zRevRank(LEADERBOARD_KEY, playerId);
-    console.log(`Player ${playerId} rank: ${rank}`);
-    return rank !== null ? rank + 1 : -1; // Redis rank is 0-based, convert to 1-based
+    // 获取玩家的分数
+    const playerScore = await redis.zScore(LEADERBOARD_KEY, playerId);
+    if (playerScore === null) {
+      console.log(`Player ${playerId} not found in leaderboard`);
+      return -1;
+    }
+    
+    // 计算有多少玩家的分数比当前玩家高
+    // 由于我们要时间长的排在前面，所以计算分数大于当前玩家分数的玩家数量
+    const playersWithHigherScores = await redis.zCount(LEADERBOARD_KEY, `(${playerScore}`, '+inf');
+    
+    // 排名 = 比当前玩家分数高的玩家数量 + 1
+    const rank = playersWithHigherScores + 1;
+    
+    console.log(`Player ${playerId} score: ${playerScore}, rank: ${rank}`);
+    return rank;
   } catch (error) {
     console.error('Error getting player rank:', error);
     return -1;
