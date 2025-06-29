@@ -334,6 +334,99 @@ router.get('/api/player-best', async (req, res): Promise<void> => {
 // ==================== 调试和管理API路由 ====================
 
 /**
+ * 添加测试数据到排行榜
+ * Add test data to leaderboard
+ * POST /api/add-test-data
+ */
+router.post('/api/add-test-data', async (_req, res): Promise<void> => {
+  try {
+    const { redis } = getContext();
+    
+    // 创建测试玩家数据
+    const testPlayers: PlayerScore[] = [
+      {
+        playerId: 'test_player_1',
+        playerName: 'CatMaster',
+        enduranceDuration: 180, // 3分钟
+        catAvatarId: '1',
+        continentId: 'AS',
+        completedAt: Date.now() - 3600000, // 1小时前
+        difficulty: 'hard'
+      },
+      {
+        playerId: 'test_player_2',
+        playerName: 'WaterWhiskers',
+        enduranceDuration: 150, // 2.5分钟
+        catAvatarId: '2',
+        continentId: 'EU',
+        completedAt: Date.now() - 7200000, // 2小时前
+        difficulty: 'medium'
+      },
+      {
+        playerId: 'test_player_3',
+        playerName: 'BubblePaws',
+        enduranceDuration: 120, // 2分钟
+        catAvatarId: '3',
+        continentId: 'NA',
+        completedAt: Date.now() - 10800000, // 3小时前
+        difficulty: 'medium'
+      },
+      {
+        playerId: 'test_player_4',
+        playerName: 'SoapyTail',
+        enduranceDuration: 90, // 1.5分钟
+        catAvatarId: '4',
+        continentId: 'SA',
+        completedAt: Date.now() - 14400000, // 4小时前
+        difficulty: 'easy'
+      },
+      {
+        playerId: 'test_player_5',
+        playerName: 'CleanKitty',
+        enduranceDuration: 75, // 1.25分钟
+        catAvatarId: '5',
+        continentId: 'AF',
+        completedAt: Date.now() - 18000000, // 5小时前
+        difficulty: 'easy'
+      },
+      {
+        playerId: 'test_player_6',
+        playerName: 'ShowerCat',
+        enduranceDuration: 60, // 1分钟
+        catAvatarId: '6',
+        continentId: 'OC',
+        completedAt: Date.now() - 21600000, // 6小时前
+        difficulty: 'medium'
+      }
+    ];
+
+    // 提交所有测试数据
+    const results = [];
+    for (const player of testPlayers) {
+      try {
+        const result = await submitScore({ redis, playerScore: player });
+        results.push(result);
+        console.log(`Added test player: ${player.playerName} - ${player.enduranceDuration}s`);
+      } catch (error) {
+        console.error(`Failed to add test player ${player.playerName}:`, error);
+      }
+    }
+
+    res.json({
+      status: 'success',
+      message: `Added ${results.length} test players to leaderboard`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Add test data error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to add test data'
+    });
+  }
+});
+
+/**
  * 调试排行榜数据
  * Debug leaderboard data
  * GET /api/debug-leaderboard
@@ -396,6 +489,7 @@ server.listen(port, () => {
   console.log('  GET  /api/leaderboard?continentId=XX - Get continent-specific leaderboard');
   console.log('  GET  /api/leaderboard/stats - Get continent statistics');
   console.log('  GET  /api/player-best - Get player personal best score');
+  console.log('  POST /api/add-test-data - Add test data to leaderboard');
   console.log('  GET  /api/debug-leaderboard - Debug leaderboard data');
   console.log('  GET  /api/health - Health check');
 });
