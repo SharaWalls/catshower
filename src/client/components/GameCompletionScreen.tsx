@@ -164,6 +164,7 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
 
   // 如果显示排名界面，返回排名组件
   if (showRanking) {
+    console.log('[GameCompletionScreen] Attempting to render LeaderboardRankingScreen');
     return <LeaderboardRankingScreen onBack={() => setShowRanking(false)} />;
   }
 
@@ -362,7 +363,10 @@ export const GameCompletionScreen: React.FC<GameCompletionScreenProps> = ({
                 <Button
                   variant="ghost"
                   className="w-[59px] h-[59px] p-0 rounded-md"
-                  onClick={() => setShowRanking(true)}
+                  onClick={() => {
+                    console.log('[GameCompletionScreen] Ranking button clicked, setting showRanking to true');
+                    setShowRanking(true);
+                  }}
                 >
                   <img
                     className="w-full h-full object-cover"

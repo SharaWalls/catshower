@@ -52,6 +52,8 @@ const getPlayerInfo = () => {
 };
 
 export const LeaderboardRankingScreen: React.FC<LeaderboardRankingScreenProps> = ({ onBack }) => {
+  console.log('[LeaderboardRankingScreen] Component mounted');
+  
   const [continentStats, setContinentStats] = useState<ContinentStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [rankings, setRankings] = useState<ContinentRanking[]>([]);
@@ -175,6 +177,8 @@ export const LeaderboardRankingScreen: React.FC<LeaderboardRankingScreenProps> =
   // 获取洲际统计数据并生成排名
   useEffect(() => {
     const fetchContinentStats = async () => {
+      console.log('[LeaderboardRankingScreen] Initiating fetchContinentStats API call');
+      
       try {
         const response = await fetch('/api/leaderboard/stats');
         const data = await response.json();
@@ -184,6 +188,7 @@ export const LeaderboardRankingScreen: React.FC<LeaderboardRankingScreenProps> =
         }
         
         if (data.status === 'success') {
+          console.log('[LeaderboardRankingScreen] API call successful, received data:', data.data);
           setContinentStats(data.data);
           
           // 按玩家人数排序洲际（降序）并生成排名
@@ -197,12 +202,13 @@ export const LeaderboardRankingScreen: React.FC<LeaderboardRankingScreenProps> =
             cats: generateCatsForContinent(stat.playerCount, stat.continentId)
           }));
 
+          console.log('[LeaderboardRankingScreen] Generated rankings:', generatedRankings);
           setRankings(generatedRankings); // 只显示有数据的洲际
         } else {
-          console.error('获取洲际统计失败:', data.message);
+          console.error('[LeaderboardRankingScreen] 获取洲际统计失败:', data.message);
         }
       } catch (error) {
-        console.error('获取洲际统计时出错:', error);
+        console.error('[LeaderboardRankingScreen] 获取洲际统计时出错:', error);
       } finally {
         setLoading(false);
       }
@@ -350,144 +356,152 @@ export const LeaderboardRankingScreen: React.FC<LeaderboardRankingScreenProps> =
             {/* 加载状态 */}
             {loading && (
               <div className="flex items-center justify-center h-full">
-                <div className="text-white text-xl">Loading continent rankings...</div>
+                <div className="text-white text-xl">
+                  {(() => {
+                    console.log('[LeaderboardRankingScreen] Displaying loading state');
+                    return 'Loading continent rankings...';
+                  })()}
+                </div>
               </div>
             )}
 
             {/* 遍历排名创建卡片 */}
-            {!loading && rankings.map((ranking, index) => (
-              <div
-                key={`ranking-${ranking.continentId}`}
-                className="absolute w-[414px] h-[249px] cursor-pointer hover:scale-[1.02] transition-transform duration-200"
-                style={{ top: `${index * (249 + 32)}px` }}
-                onClick={() => handleContinentClick(ranking.continentId)}
-              >
-                {/* 横幅区域 - 按Figma设计 Frame 84 */}
-                <div className="absolute w-[309px] h-[94px] top-[-3px] left-[63px] z-10">
-                  {/* Banner_Succ - 横幅背景图片 */}
-                  <img
-                    className="absolute w-[309px] h-[94px] top-0 left-0 object-cover"
-                    alt="横幅背景"
-                    src="/banner-succ-5.png"
-                  />
-                  
-                  {/* Frame 71 - 垂直布局容器 */}
-                  <div className="absolute w-[165px] h-[51px] top-[14px] left-[72px] flex flex-col">
-                    {/* Region_Image - 地区图片 */}
-                    <div className="w-[154px] h-[38px] relative left-[5.5px] flex items-center justify-center">
-                      <img
-                        className="max-w-full max-h-full object-contain"
-                        alt={ranking.name}
-                        src={continentImages[ranking.continentId] || '/asia.png'}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/asia.png';
-                        }}
-                      />
-                    </div>
-                    
-                    {/* PassedCat_Text - 玩家数量 */}
-                    <div 
-                      className="w-[165px] h-[27px] relative left-0 text-center text-[#161616] font-bold"
-                      style={{
-                        fontSize: '10px',
-                        fontFamily: 'Silkscreen, monospace'
-                      }}
-                    >
-                      {ranking.playerCount} meow clears!
-                    </div>
-                  </div>
-                </div>
-
-                {/* 卡片背景框架 */}
-                <div className="absolute w-[414px] h-[217px] top-[32px] left-0">
-                  {/* 卡片背景 */}
-                  <img
-                    className="absolute w-[394px] h-[217px] top-0 left-[20px] object-cover"
-                    alt={`${ranking.name}卡片背景`}
-                    src="/card-bg-s-5.png"
-                  />
-
-                  {/* 排名徽章 */}
-                  <img
-                    className="absolute w-[50px] h-[50px] top-[87px] left-0 object-cover"
-                    alt={`第${ranking.rank}名`}
-                    src={ranking.rankImage}
-                  />
-                  
-                  {/* 显示第4名以后的排名数字 */}
-                  {ranking.rank > 3 && (
-                    <div 
-                      className="absolute w-[50px] h-[50px] top-[87px] left-0 flex items-center justify-center text-white font-bold"
-                      style={{
-                        fontSize: '18px',
-                        fontFamily: 'Silkscreen, monospace'
-                      }}
-                    >
-                      {ranking.rank}
-                    </div>
-                  )}
-                </div>
-
-                {/* 猫咪框架 - 定位在卡片内 */}
-                <div className="absolute w-[313px] h-[143px] top-[84px] left-[40px]">
-                  {/* 生成的猫咪 */}
-                  {ranking.cats.map((cat, catIndex) => (
+            {!loading && (() => {
+              console.log('[LeaderboardRankingScreen] Displaying rankings, count:', rankings.length);
+              return rankings.map((ranking, index) => (
+                <div
+                  key={`ranking-${ranking.continentId}`}
+                  className="absolute w-[414px] h-[249px] cursor-pointer hover:scale-[1.02] transition-transform duration-200"
+                  style={{ top: `${index * (249 + 32)}px` }}
+                  onClick={() => handleContinentClick(ranking.continentId)}
+                >
+                  {/* 横幅区域 - 按Figma设计 Frame 84 */}
+                  <div className="absolute w-[309px] h-[94px] top-[-3px] left-[63px] z-10">
+                    {/* Banner_Succ - 横幅背景图片 */}
                     <img
-                      key={`${ranking.continentId}-${cat.id}-${catIndex}`}
-                      className="absolute object-cover"
-                      style={{
-                        top: `${cat.y}px`,
-                        left: `${cat.x}px`,
-                        width: `${cat.size}px`,
-                        height: `${cat.size}px`,
-                        transform: cat.flipped ? 'scaleX(-1)' : 'none'
-                      }}
-                      alt={`猫咪${cat.id}`}
-                      src={cat.src}
+                      className="absolute w-[309px] h-[94px] top-0 left-0 object-cover"
+                      alt="横幅背景"
+                      src="/banner-succ-5.png"
                     />
-                  ))}
-
-                  {/* 只在玩家所在的洲显示主猫咪和名牌 */}
-                  {ranking.continentId === getPlayerContinent() && (
-                    /* 玩家主猫咪和名牌（类似GameCompletionScreen） */
-                    <div className="absolute w-[106px] h-[130px] top-0 left-0">
-                      {/* 玩家名牌 */}
-                      <div className="absolute w-[103px] h-[66px] top-0 left-0">
+                    
+                    {/* Frame 71 - 垂直布局容器 */}
+                    <div className="absolute w-[165px] h-[51px] top-[14px] left-[72px] flex flex-col">
+                      {/* Region_Image - 地区图片 */}
+                      <div className="w-[154px] h-[38px] relative left-[5.5px] flex items-center justify-center">
                         <img
-                          className="w-full h-full object-cover"
-                          alt="玩家名牌背景"
-                          src="/nametag.png"
-                        />
-                        
-                        {/* 玩家名字文字 */}
-                        <div 
-                          className="absolute left-0 right-0 font-bold text-black tracking-[0] leading-[normal] whitespace-nowrap text-center"
-                          style={{
-                            fontFamily: 'lores-12', 
-                            fontSize: `${Math.max(8, 20 - playerInfo.playerName.length * 1.5)}px`,
-                            top: `${26 - (Math.max(8, 20 - playerInfo.playerName.length * 1.5) - 16) * 0.2}px` // 根据字体大小调整居中位置
+                          className="max-w-full max-h-full object-contain"
+                          alt={ranking.name}
+                          src={continentImages[ranking.continentId] || '/asia.png'}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/asia.png';
                           }}
-                        >
-                          {playerInfo.playerName.slice(0, 8)}
-                        </div>
+                        />
                       </div>
                       
-                      {/* 玩家主猫咪 */}
-                      <img
-                        className="absolute w-[97px] h-[97px] top-[33px] left-[9px] object-cover"
-                        alt="玩家的猫咪"
-                        src={playerInfo.selectedCat}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/Cat_1.png";
+                      {/* PassedCat_Text - 玩家数量 */}
+                      <div 
+                        className="w-[165px] h-[27px] relative left-0 text-center text-[#161616] font-bold"
+                        style={{
+                          fontSize: '10px',
+                          fontFamily: 'Silkscreen, monospace'
                         }}
-                      />
+                      >
+                        {ranking.playerCount} meow clears!
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  {/* 卡片背景框架 */}
+                  <div className="absolute w-[414px] h-[217px] top-[32px] left-0">
+                    {/* 卡片背景 */}
+                    <img
+                      className="absolute w-[394px] h-[217px] top-0 left-[20px] object-cover"
+                      alt={`${ranking.name}卡片背景`}
+                      src="/card-bg-s-5.png"
+                    />
+
+                    {/* 排名徽章 */}
+                    <img
+                      className="absolute w-[50px] h-[50px] top-[87px] left-0 object-cover"
+                      alt={`第${ranking.rank}名`}
+                      src={ranking.rankImage}
+                    />
+                    
+                    {/* 显示第4名以后的排名数字 */}
+                    {ranking.rank > 3 && (
+                      <div 
+                        className="absolute w-[50px] h-[50px] top-[87px] left-0 flex items-center justify-center text-white font-bold"
+                        style={{
+                          fontSize: '18px',
+                          fontFamily: 'Silkscreen, monospace'
+                        }}
+                      >
+                        {ranking.rank}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 猫咪框架 - 定位在卡片内 */}
+                  <div className="absolute w-[313px] h-[143px] top-[84px] left-[40px]">
+                    {/* 生成的猫咪 */}
+                    {ranking.cats.map((cat, catIndex) => (
+                      <img
+                        key={`${ranking.continentId}-${cat.id}-${catIndex}`}
+                        className="absolute object-cover"
+                        style={{
+                          top: `${cat.y}px`,
+                          left: `${cat.x}px`,
+                          width: `${cat.size}px`,
+                          height: `${cat.size}px`,
+                          transform: cat.flipped ? 'scaleX(-1)' : 'none'
+                        }}
+                        alt={`猫咪${cat.id}`}
+                        src={cat.src}
+                      />
+                    ))}
+
+                    {/* 只在玩家所在的洲显示主猫咪和名牌 */}
+                    {ranking.continentId === getPlayerContinent() && (
+                      /* 玩家主猫咪和名牌（类似GameCompletionScreen） */
+                      <div className="absolute w-[106px] h-[130px] top-0 left-0">
+                        {/* 玩家名牌 */}
+                        <div className="absolute w-[103px] h-[66px] top-0 left-0">
+                          <img
+                            className="w-full h-full object-cover"
+                            alt="玩家名牌背景"
+                            src="/nametag.png"
+                          />
+                          
+                          {/* 玩家名字文字 */}
+                          <div 
+                            className="absolute left-0 right-0 font-bold text-black tracking-[0] leading-[normal] whitespace-nowrap text-center"
+                            style={{
+                              fontFamily: 'lores-12', 
+                              fontSize: `${Math.max(8, 20 - playerInfo.playerName.length * 1.5)}px`,
+                              top: `${26 - (Math.max(8, 20 - playerInfo.playerName.length * 1.5) - 16) * 0.2}px` // 根据字体大小调整居中位置
+                            }}
+                          >
+                            {playerInfo.playerName.slice(0, 8)}
+                          </div>
+                        </div>
+                        
+                        {/* 玩家主猫咪 */}
+                        <img
+                          className="absolute w-[97px] h-[97px] top-[33px] left-[9px] object-cover"
+                          alt="玩家的猫咪"
+                          src={playerInfo.selectedCat}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/Cat_1.png";
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
       </div>
