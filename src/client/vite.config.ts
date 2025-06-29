@@ -22,6 +22,13 @@ export default defineConfig({
     port: 7474,
     host: true,
     strictPort: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:7475',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   preview: {
     port: 7474,
