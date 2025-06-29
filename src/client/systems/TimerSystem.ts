@@ -1,6 +1,6 @@
 /**
- * 计时器系统
- * 负责处理游戏中的各种计时逻辑
+ * 计时系统
+ * 负责处理游戏中的时间管理逻辑
  * 
  * @author 开发者A - 游戏核心逻辑负责人
  */
@@ -15,10 +15,11 @@ export class TimerSystem {
   }
 
   /**
-   * 更新游戏主计时器 - 现在是正计时（坚持时长）
-   * Update main game timer - now counts up (endurance time)
+   * 更新游戏计时器（现在是正计时，记录坚持时长）
+   * Update game timer (now counting up, recording endurance duration)
    */
   updateGameTimer(currentTimer: number, deltaTime: number): number {
+    // 现在是正计时，记录玩家坚持了多长时间
     return currentTimer + deltaTime;
   }
 
@@ -47,24 +48,16 @@ export class TimerSystem {
   }
 
   /**
-   * 检查是否因舒适度过低而失败（新的失败条件）
-   * Check if game failed due to low comfort
+   * 检查是否达到成功条件（保持最大舒适度足够长时间）
+   * Check if success condition is met (maintaining max comfort for enough time)
    */
-  isComfortFailure(currentComfort: number): boolean {
-    return currentComfort <= 0.1; // 舒适度降到10%以下时游戏失败
-  }
-
-  /**
-   * 检查是否达成成功条件
-   * Check if success condition is met
-   */
-  isSuccessHoldComplete(successHoldTimer: number): boolean {
+  isSuccessConditionMet(successHoldTimer: number): boolean {
     return successHoldTimer >= this.config.SUCCESS_HOLD_TIME;
   }
 
   /**
-   * 格式化时间显示 - 显示坚持时长
-   * Format time display - shows endurance time
+   * 格式化时间显示
+   * Format time display
    */
   formatTime(seconds: number): string {
     const mins = Math.floor(seconds / 60);
@@ -73,18 +66,17 @@ export class TimerSystem {
   }
 
   /**
-   * 获取剩余成功保持时间
-   * Get remaining success hold time
+   * 获取时间等级（基于坚持时长）
+   * Get time grade (based on endurance duration)
    */
-  getRemainingSuccessTime(successHoldTimer: number): number {
-    return Math.ceil(this.config.SUCCESS_HOLD_TIME - successHoldTimer);
-  }
-
-  /**
-   * 获取坚持时长（秒）
-   * Get endurance duration in seconds
-   */
-  getEnduranceDuration(gameTimer: number): number {
-    return Math.floor(gameTimer);
+  getTimeGrade(seconds: number): { grade: string; color: string } {
+    if (seconds >= 300) return { grade: 'S+', color: '#FFD700' }; // 5分钟以上
+    if (seconds >= 240) return { grade: 'S', color: '#FFD700' }; // 4分钟以上
+    if (seconds >= 180) return { grade: 'A+', color: '#FF6B6B' }; // 3分钟以上
+    if (seconds >= 120) return { grade: 'A', color: '#FF6B6B' }; // 2分钟以上
+    if (seconds >= 90) return { grade: 'B+', color: '#4ECDC4' }; // 1.5分钟以上
+    if (seconds >= 60) return { grade: 'B', color: '#4ECDC4' }; // 1分钟以上
+    if (seconds >= 30) return { grade: 'C', color: '#45B7D1' }; // 30秒以上
+    return { grade: 'D', color: '#96CEB4' }; // 30秒以下
   }
 }

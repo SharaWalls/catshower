@@ -60,6 +60,7 @@ export const useGameState = (config: GameConfig) => {
   const resetGame = useCallback(() => {
     if (!gameStateManagerRef.current) return;
     
+    console.log('[useGameState] Resetting game...'); // 添加日志
     setCurrentRound(1);
     setGameState(gameStateManagerRef.current.resetGameState());
     lastUpdateTimeRef.current = Date.now();
@@ -69,6 +70,7 @@ export const useGameState = (config: GameConfig) => {
   const startNextRound = useCallback(() => {
     if (!gameStateManagerRef.current) return;
     
+    console.log('[useGameState] Starting next round...'); // 添加日志
     const nextRound = currentRound + 1;
     setCurrentRound(nextRound);
     setGameState(gameStateManagerRef.current.resetGameState());
@@ -97,7 +99,20 @@ export const useGameState = (config: GameConfig) => {
 
       setGameState(prevState => {
         if (prevState.gameStatus !== 'playing') return prevState;
-        return gameStateManagerRef.current!.updateGameState(prevState, clampedDeltaTime);
+        
+        // 添加日志：每隔一定时间打印游戏状态和舒适度
+        if (Math.floor(prevState.gameTimer) !== Math.floor(prevState.gameTimer + clampedDeltaTime)) { // 大约每秒打印一次
+          console.log(`[useGameState] Game Status: ${prevState.gameStatus}, Comfort: ${prevState.currentComfort.toFixed(2)}, Timer: ${prevState.gameTimer.toFixed(0)}s`);
+        }
+        
+        const newState = gameStateManagerRef.current!.updateGameState(prevState, clampedDeltaTime);
+        
+        // 检查游戏状态是否发生变化
+        if (newState.gameStatus !== prevState.gameStatus) {
+          console.log(`[useGameState] Game status changed from ${prevState.gameStatus} to ${newState.gameStatus}`);
+        }
+        
+        return newState;
       });
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);

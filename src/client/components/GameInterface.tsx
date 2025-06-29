@@ -452,6 +452,7 @@ export const GameInterface: React.FC = () => {
   // 当游戏结束时计算总时间并显示游戏结算界面
   useEffect(() => {
     if (gameState.gameStatus === 'success' || gameState.gameStatus === 'failure') {
+      console.log(`[GameInterface] Game ended! Status: ${gameState.gameStatus}, Total Time: ${totalGameTime}, Player Info:`, playerInfo); // 添加日志
       const endTime = Date.now();
       const totalTime = Math.round((endTime - gameStartTime) / 1000);
       setTotalGameTime(totalTime);
@@ -463,7 +464,8 @@ export const GameInterface: React.FC = () => {
 
       // 延迟一小段时间显示游戏结算界面，避免立即跳转
       setTimeout(() => {
-      setShowGameCompletion(true);
+        console.log(`[GameInterface] Setting showGameCompletion to true. Current value: ${showGameCompletion}`); // 添加日志
+        setShowGameCompletion(true);
       }, 1000);
     }
   }, [gameState.gameStatus, gameStartTime, currentRound, playerInfo]);
@@ -516,6 +518,7 @@ export const GameInterface: React.FC = () => {
 
   // 如果游戏结束，显示游戏结算界面
   if (showGameCompletion && playerInfo) {
+    console.log(`[GameInterface] Rendering GameCompletionScreen. showGameCompletion: ${showGameCompletion}, playerInfo:`, playerInfo); // 添加日志
     return (
       <GameCompletionScreen
         onPlayAgain={() => {
