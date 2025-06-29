@@ -59,6 +59,19 @@ const CONTINENT_INFO = {
 };
 
 /**
+ * 安全的JSON解析函数
+ * Safe JSON parsing function
+ */
+function safeJsonParse<T>(jsonString: string, fallback: T | null = null): T | null {
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('JSON parsing error:', error, 'Raw data:', jsonString);
+    return fallback;
+  }
+}
+
+/**
  * 提交玩家分数到全球排行榜
  * Submit player score to global leaderboard
  */
@@ -143,9 +156,9 @@ export async function getLeaderboard({
       const playerDataStr = await redis.hGet(PLAYER_SCORES_KEY, playerId);
       
       if (playerDataStr) {
-        try {
-          const playerData: PlayerScore = JSON.parse(playerDataStr);
-          
+        const playerData = safeJsonParse<PlayerScore>(playerDataStr);
+        
+        if (playerData) {
           // 如果指定了洲际，只包含该洲际的玩家
           if (!continentId || playerData.continentId === continentId) {
             const entry: LeaderboardEntry = {
@@ -155,8 +168,10 @@ export async function getLeaderboard({
             entries.push(entry);
             console.log(`Rank ${entry.rank}: ${entry.playerName} (${entry.continentId}) - ${entry.enduranceDuration}s`);
           }
-        } catch (parseError) {
-          console.error(`Error parsing player data for ${playerId}:`, parseError);
+        } else {
+          console.warn(`Invalid JSON data for player ${playerId}, skipping`);
+          // 可选：清理无效数据
+          await redis.hDel(PLAYER_SCORES_KEY, playerId);
         }
       } else {
         console.warn(`No player data found for ${playerId}`);
@@ -214,12 +229,15 @@ export async function getContinentStats({
     const continentCounts: { [key: string]: number } = {};
     
     for (const [playerId, playerDataStr] of Object.entries(allPlayerData)) {
-      try {
-        const playerData: PlayerScore = JSON.parse(playerDataStr);
+      const playerData = safeJsonParse<PlayerScore>(playerDataStr);
+      
+      if (playerData) {
         const continent = playerData.continentId || 'Unknown';
         continentCounts[continent] = (continentCounts[continent] || 0) + 1;
-      } catch (parseError) {
-        console.error(`Error parsing player data for ${playerId}:`, parseError);
+      } else {
+        console.warn(`Invalid JSON data for player ${playerId}, cleaning up`);
+        // 清理无效数据
+        await redis.hDel(PLAYER_SCORES_KEY, playerId);
       }
     }
     
@@ -295,12 +313,15 @@ export async function getPlayerBest({
     
     const playerDataStr = await redis.hGet(PLAYER_SCORES_KEY, playerId);
     if (playerDataStr) {
-      try {
-        const playerData: PlayerScore = JSON.parse(playerDataStr);
+      const playerData = safeJsonParse<PlayerScore>(playerDataStr);
+      
+      if (playerData) {
         console.log(`Found best score for player ${playerId}:`, playerData);
         return playerData;
-      } catch (parseError) {
-        console.error(`Error parsing player data for ${playerId}:`, parseError);
+      } else {
+        console.warn(`Invalid JSON data for player ${playerId}, cleaning up`);
+        // 清理无效数据
+        await redis.hDel(PLAYER_SCORES_KEY, playerId);
         return null;
       }
     }
@@ -332,6 +353,35 @@ export async function cleanupLeaderboard(redis: Context['redis'] | RedisClient):
 }
 
 /**
+ * 清理损坏的数据
+ * Clean up corrupted data
+ */
+export async function cleanupCorruptedData(redis: Context['redis'] | RedisClient): Promise<void> {
+  try {
+    console.log('Starting cleanup of corrupted data...');
+    
+    const allPlayerData = await redis.hGetAll(PLAYER_SCORES_KEY);
+    let cleanedCount = 0;
+    
+    for (const [playerId, playerDataStr] of Object.entries(allPlayerData)) {
+      const playerData = safeJsonParse<PlayerScore>(playerDataStr);
+      
+      if (!playerData) {
+        console.log(`Removing corrupted data for player ${playerId}`);
+        await redis.hDel(PLAYER_SCORES_KEY, playerId);
+        // 同时从排行榜中移除
+        await redis.zRem(LEADERBOARD_KEY, playerId);
+        cleanedCount++;
+      }
+    }
+    
+    console.log(`Cleanup completed. Removed ${cleanedCount} corrupted entries.`);
+  } catch (error) {
+    console.error('Error during cleanup:', error);
+  }
+}
+
+/**
  * 调试函数：获取 Redis 中的所有排行榜数据
  * Debug function: Get all leaderboard data from Redis
  */
@@ -353,11 +403,12 @@ export async function debugLeaderboard(redis: Context['redis'] | RedisClient): P
         const playerDataStr = await redis.hGet(PLAYER_SCORES_KEY, playerId);
         
         if (playerDataStr) {
-          try {
-            const playerData: PlayerScore = JSON.parse(playerDataStr);
+          const playerData = safeJsonParse<PlayerScore>(playerDataStr);
+          
+          if (playerData) {
             console.log(`Rank ${i + 1}: ${playerData.playerName} (${playerData.continentId}) - ${playerData.enduranceDuration}s`);
-          } catch (parseError) {
-            console.log(`Rank ${i + 1}: [Parse Error] ${playerId}`);
+          } else {
+            console.log(`Rank ${i + 1}: [Invalid JSON] ${playerId}`);
           }
         } else {
           console.log(`Rank ${i + 1}: [No Data] ${playerId}`);
