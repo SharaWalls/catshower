@@ -331,8 +331,6 @@ router.get('/api/player-best', async (req, res): Promise<void> => {
   }
 });
 
-// ==================== 调试和管理API路由 ====================
-
 /**
  * 添加测试数据到排行榜
  * Add test data to leaderboard
@@ -425,6 +423,8 @@ router.post('/api/add-test-data', async (_req, res): Promise<void> => {
     });
   }
 });
+
+// ==================== 调试和管理API路由 ====================
 
 /**
  * 调试排行榜数据
