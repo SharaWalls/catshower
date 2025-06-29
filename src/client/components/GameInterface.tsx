@@ -421,6 +421,7 @@ export const GameInterface: React.FC = () => {
 
   // 处理开始游戏
   const handleStartGame = (newPlayerInfo: PlayerInfo) => {
+    console.log('[GameInterface] Starting game with player info:', newPlayerInfo);
     setPlayerInfo(newPlayerInfo);
     setIsGameStarted(true);
     setShowGameCompletion(false); // 确保重置游戏完成状态
@@ -458,7 +459,7 @@ export const GameInterface: React.FC = () => {
       setTotalGameTime(totalTime);
 
       // 自动提交分数到排行榜
-      if (playerInfo && (currentRound > 1 || gameState.gameStatus === 'success')) {
+      if (playerInfo && totalTime > 0) {
         handleAutoScoreSubmit(totalTime);
       }
 
@@ -472,37 +473,39 @@ export const GameInterface: React.FC = () => {
 
   // 初始化时获取玩家最佳成绩
   useEffect(() => {
-    if (isGameStarted) {
-    fetchPlayerBest();
+    if (isGameStarted && playerInfo) {
+      // 生成玩家ID（在实际应用中，这应该来自Reddit用户ID）
+      const playerId = `player_${playerInfo.playerName}_${Date.now()}`;
+      fetchPlayerBest(playerId);
     }
-  }, [fetchPlayerBest, isGameStarted]);
+  }, [fetchPlayerBest, isGameStarted, playerInfo]);
 
   // 处理自动分数提交
   const handleAutoScoreSubmit = async (totalTime: number) => {
     if (!playerInfo) return;
 
     try {
-      // 获取坚持时长（从gameTimer获取）
-      const enduranceDuration = Math.floor(gameState.gameTimer);
+      console.log('[GameInterface] Auto-submitting score:', {
+        playerName: playerInfo.playerName,
+        enduranceDuration: totalTime,
+        catAvatarId: playerInfo.catAvatarId,
+        continentId: playerInfo.continentId
+      });
       
       const result = await submitScore(
         playerInfo.playerName, 
-        enduranceDuration, // 坚持时长
+        totalTime, // 坚持时长作为主要评分标准
         playerInfo.catAvatarId,
         playerInfo.continentId,
-        // 可选参数
-        0, // roundsCompleted
-        totalTime || 0, // totalTime
+        0, // roundsCompleted (坚持时长挑战中不再使用)
+        totalTime, // totalTime
         'medium', // difficulty
         userCountryCode || 'US' // countryCode
       );
       
-      // 提交成功后刷新玩家最佳成绩
-      await fetchPlayerBest();
-      
-      console.log('Score auto-submitted:', result);
+      console.log('[GameInterface] Score auto-submitted successfully:', result);
     } catch (error) {
-      console.error('Error auto-submitting score:', error);
+      console.error('[GameInterface] Error auto-submitting score:', error);
     }
   };
 
@@ -522,6 +525,7 @@ export const GameInterface: React.FC = () => {
     return (
       <GameCompletionScreen
         onPlayAgain={() => {
+          console.log('[GameInterface] Play again clicked');
           setShowGameCompletion(false);
           resetGame();
         }}
@@ -554,19 +558,19 @@ export const GameInterface: React.FC = () => {
       )}
 
       {/* 排行榜模态框 */}
-       {showLeaderboard && playerBest && (
-      <LeaderboardModal
-        isOpen={showLeaderboard}
-        onClose={() => setShowLeaderboard(false)}
-           currentPlayerScore={{
-             score: playerBest.totalTime,
-             rank: 0,
-          roundsCompleted: playerBest.roundsCompleted,
-          compositeScore: playerBest.compositeScore
-           }}
-        userCountryCode={userCountryCode}
-      />
-       )}
+      {showLeaderboard && playerBest && (
+        <LeaderboardModal
+          isOpen={showLeaderboard}
+          onClose={() => setShowLeaderboard(false)}
+          currentPlayerScore={{
+            score: playerBest.enduranceDuration, // 使用坚持时长作为分数
+            rank: 0,
+            roundsCompleted: playerBest.roundsCompleted || 0,
+            compositeScore: playerBest.enduranceDuration // 坚持时长就是复合分数
+          }}
+          userCountryCode={userCountryCode}
+        />
+      )}
     </div>
   );
 };
